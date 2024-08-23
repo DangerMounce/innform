@@ -1,27 +1,32 @@
 import fs from 'fs'
 import axios from 'axios';
 import dotenv from 'dotenv';
+import OpenAI from 'openai';
 dotenv.config();
 
 const args = process.argv.slice(2);
 let baseInstruction = args[1]
-const courseName = args[0]
+let courseName = args[0]
 const switchFilterInstruction = args[2]
 const userListInstruction = args[3]
 const apiUrl = 'https://api.innform.io/v1/'
 
-if (courseName === '-l') {
-    baseInstruction = courseName
-}
+const openAIClient = new OpenAI({
+    openAiApiKey: process.env['OPENAI_API_KEY']
+});
+
+
+
+
 
 const apiKey = process.env.INNFORM_API_KEY;
 
 const courseData = await fetchApi('courses')
+const filteredCourseData = await removeElements(courseData)
 const userData = await fetchApi('users')
 // Test Data
 const assignmentsDataFile = 'assignments.json'
 const userDataFile = 'users.json'
-
 
 // This function connects to the end point and returns the response
 async function fetchApi(endpoint) {
@@ -32,6 +37,43 @@ async function fetchApi(endpoint) {
     return response.data
 }
 
+async function removeElements(data) {
+    // Iterate through each object in the array
+    return data.map((item) => {
+        // Destructure the item to remove specified keys
+        const {
+            content_type,
+            duration,
+            status,
+            version,
+            pass_mark,
+            // Keep all other properties not listed above
+            ...filteredItem
+        } = item;
+
+        // Check if 'assignments' exists and process it
+        if (filteredItem.assignments) {
+            filteredItem.assignments = filteredItem.assignments.map((assignment) => {
+                // Destructure to remove specified keys from assignments
+                const {
+                    url,
+                    certified,
+                    item_type,
+                    learning_path_id,
+                    lp_assignment_id,
+                    item_version,
+                    completed_count, // Add this line to remove completed_count
+                    // Keep all other properties not listed above
+                    ...filteredAssignment
+                } = assignment;
+
+                return filteredAssignment; // Return the filtered assignment object
+            });
+        }
+
+        return filteredItem; // Return the filtered main object
+    });
+}
 // This function reads the data from a JSON file
 async function readJsonFile(filePath) {
     return new Promise((resolve, reject) => {
@@ -50,6 +92,17 @@ async function readJsonFile(filePath) {
     });
 }
 
+async function checkCourseName(courseName){
+    const listOfCourses = await justCourseTitles(courseData)
+    return listOfCourses.includes(courseName);
+}
+
+async function justCourseTitles(courseData) {
+    return courseData.map(course => {
+        // Return a string in the desired format
+        return `${course.title}`;
+    }).sort((a, b) => a.localeCompare(b)); // Sort the array by title A-Z
+}
 
 // Lists course titles
 async function logCourseTitles(courseData) {
@@ -471,6 +524,19 @@ async function getUsersWithBelowScore(courseName) {
     }
 }
 
+function writeDataToFile(data) {
+    // Convert the data to a JSON string with indentation for readability
+    const jsonData = JSON.stringify(data, null, 2);
+
+    // Write the JSON string to a file named 'data.json'
+    fs.writeFile('data.json', jsonData, 'utf8', (err) => {
+        if (err) {
+            console.error('An error occurred while writing to the file:', err);
+        } else {
+            console.log('Data successfully written to data.json');
+        }
+    });
+}
 
 
 // List everything
@@ -487,9 +553,30 @@ async function listCourseData(courseName) {
 }
 
 
-// listCourseData("Sentiment and Summarisation", "completed")
+
+async function matchCourseName(courseList, courseName) {
+
+    const chatCompletion = await openAIClient.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+            { role: 'user', content: `Match this course name "${courseName}" to a course title in this list: ${courseList}.  Please only return the closest match.  Do not return anything else other than the matched course title.`}
+        ]
+    })
+     return (chatCompletion.choices[0].message.content)
+}
+
 
 console.clear()
+if (courseName === '-l' || courseName === '-lc') {
+    baseInstruction = courseName
+} else {
+    const validCourseName = await checkCourseName(courseName)
+    if (!validCourseName) {
+        const courseList = await justCourseTitles(courseData)
+        courseName = await matchCourseName(courseList, courseName)
+    }
+}
+
 switch (baseInstruction) {
     case '-s': // Statuses of course
         if (!courseName) {
@@ -563,16 +650,19 @@ switch (baseInstruction) {
                     console.log(userList)
                 }
 
-                
+
             }
         }
         break;
-        case '-l':
-            const courseTitles = await logCourseTitles(courseData)
-            console.log(courseTitles)
+    case '-l':
+        const courseTitles = await logCourseTitles(courseData)
+        console.log(courseTitles)
+        break;
+    case '-x':
+
         break;
     default:
-        console.log('default error')
+        console.log('default break')
         break;
 }
 
