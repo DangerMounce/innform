@@ -1,6 +1,6 @@
 # Innform Query Script
 
-This script uses the Innform API to query coure activity.
+This script uses the Innform API to query course activity.
 
 ## Prerequisites
 
