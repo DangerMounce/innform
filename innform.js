@@ -27,6 +27,10 @@ if (courseName === '-q') {
   baseInstruction = courseName
 }
 
+if (courseName === '-users') {
+  baseInstruction = courseName
+}
+
 const apiKey = process.env.INNFORM_API_KEY;
 
 const courseData = await fetchApi('courses')
@@ -599,6 +603,53 @@ async function listCourseData(courseName) {
 
 }
 
+// gets the user info from the UUID
+async function userInformation(userUUID) {
+  const userAssignments = [];
+
+  // Iterate over each course
+  courseData.forEach(course => {
+    // Iterate over each assignment in the course
+    course.assignments.forEach(assignment => {
+      if (assignment.user_id === userUUID) {
+        // Format dates
+        const assignedDate = assignment.assigned_at
+          ? new Date(assignment.assigned_at).toLocaleDateString('en-GB')
+          : 'Not Assigned';
+        const completedDate = assignment.completed_at
+          ? new Date(assignment.completed_at).toLocaleDateString('en-GB')
+          : 'Not Completed';
+
+        // Calculate the difference in days between assigned and completed dates
+        let daysBetween = 'N/A';
+        if (assignment.assigned_at && assignment.completed_at) {
+          const assignedDateObj = new Date(assignment.assigned_at);
+          const completedDateObj = new Date(assignment.completed_at);
+          const timeDifference = completedDateObj - assignedDateObj;
+          daysBetween = Math.ceil(timeDifference / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
+        }
+
+        userAssignments.push({
+          Course: course.title,
+          Status: assignment.status,
+          Result: assignment.result,
+          'Assigned At': assignedDate,
+          'Completed At': completedDate,
+          'Days Between': daysBetween,
+        });
+      }
+    });
+  });
+
+  if (userAssignments.length > 0) {
+    console.log(`User: ${courseName}`);
+    console.table(userAssignments); // Use console.table to display results in a table format
+  } else {
+    console.log(`No assignments found for user UUID: ${userUUID}`);
+  }
+}
+
+
 async function queryOpenAI() {
 
   while (true) {
@@ -727,6 +778,24 @@ async function queryOpenAI() {
   }
 }
 
+// List Users
+async function listUsers(){
+  const userList = await fetchApi('users')
+  console.log(userList)
+}
+
+async function getUserUUIDByName(userName) {
+  // Find the user with the matching name
+  const user = userData.find(user => user.name === userName);
+
+  if (user) {
+      return user.id; // Return the UUID if the user is found
+  } else {
+      console.log(`User "${userName}" not found.`);
+      return null; // Return null if the user is not found
+  }
+}
+
 // listCourseData("Sentiment and Summarisation", "completed")
 
 console.clear()
@@ -818,6 +887,13 @@ switch (baseInstruction) {
   case '-q': // openAI code 
     logger.info(`-q activated`)
     queryOpenAI()
+
+
+break;
+case '-info': // openAI code 
+logger.info(`-info activated`)
+const userUUID = await getUserUUIDByName(courseName)
+userInformation(userUUID)
 
 
 break;
