@@ -9,7 +9,7 @@ const customLevels = {
     error: 1,
     warn: 2,
     info: 3,
-    synthesia: 4,
+    innform: 4,
     user_message: 5
   },
   colors: {
@@ -17,7 +17,7 @@ const customLevels = {
     error: 'red',
     warn: 'yellow',
     info: 'green',
-    synthesia: 'blue',
+    innform: 'blue',
     user_message: 'magenta'
   }
 };
