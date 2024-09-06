@@ -28,6 +28,18 @@ if (courseName === '-users') {
     logger.info(`baseInstruction - ${baseInstruction} = args 1 - ${args[1]}`)
 }
 
+if (courseName === '-write') {
+    logger.info(`Applying courseName to baseInstruction`)
+    baseInstruction = courseName
+    logger.info(`baseInstruction - ${baseInstruction} = args 1 - ${args[1]}`)
+}
+
+if (courseName === '-daily') {
+    logger.info(`Applying courseName to baseInstruction`)
+    baseInstruction = courseName
+    logger.info(`baseInstruction - ${baseInstruction} = args 1 - ${args[1]}`)
+}
+
 console.clear()
 switch (baseInstruction) {
     case `-l`:
@@ -63,7 +75,7 @@ switch (baseInstruction) {
         // In Progress List
         console.log('')
         const inProgressList = await innform.getUserList(courseName, "in_progress")
-        console.log(chalk.bold.red(`In Progress (${inProgressList.length})`))
+        console.log(chalk.bold.yellow(`In Progress (${inProgressList.length})`))
         inProgressList.forEach(user => {
             // Check if score is available and log accordingly
             if (user.score !== null) {
@@ -115,6 +127,12 @@ switch (baseInstruction) {
         const fullUserList = await innform.fetchApi('users')
         const userList = await innform.getUserNamesAndGroups(fullUserList)
         console.log(userList)
+        break;
+    case '-write':
+        utils.writeToJson(innform.courseData, "courseData.json")
+        break;
+    case '-daily':
+        innform.displayDailyActivityByUser()
         break;
     default:
         logger.warn(`Default code block of switch reached`)

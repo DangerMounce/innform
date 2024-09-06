@@ -1,5 +1,6 @@
 import fs from 'fs'
 import { innform } from './innform_module.js';
+import logger from './logger.js';
 
 // Function to read data from a JSON file
 async function readJsonFile(filePath) {

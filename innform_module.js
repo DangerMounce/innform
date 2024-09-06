@@ -448,6 +448,113 @@ async function getUserNamesAndGroups(userList) {
     return result;
   }
 
+// Function to show daily activity
+async function displayDailyActivityByUser() {
+    const dailyActivity = {};
+    const today = new Date().toLocaleDateString('en-GB'); // Get today's date in 'en-GB' format
+  
+    // Iterate through the courses and their assignments
+    courseData.forEach(course => {
+      course.assignments.forEach(assignment => {
+        const assignedDate = new Date(assignment.assigned_at).toLocaleDateString('en-GB');
+        const completedDate = assignment.completed_at
+          ? new Date(assignment.completed_at).toLocaleDateString('en-GB')
+          : 'Not Completed';
+        const status = assignment.status;
+        const userId = assignment.user_id;
+  
+        // Only consider today's activity
+        if (assignedDate !== today && completedDate !== today) return;
+  
+        // Ensure user activity for the date exists
+        if (!dailyActivity[userId]) {
+          dailyActivity[userId] = {
+            completed: [],
+            in_progress: [],
+            pending: [],
+            overdue: [],
+          };
+        }
+  
+        // Group the activity by the user's status
+        if (status === 'completed' && completedDate === today) {
+          dailyActivity[userId].completed.push({
+            courseTitle: course.title,
+            completedDate,
+            result: assignment.result,
+          });
+        } else if (status === 'in_progress') {
+          dailyActivity[userId].in_progress.push({
+            courseTitle: course.title,
+          });
+        } else if (status === 'pending') {
+          dailyActivity[userId].pending.push({
+            courseTitle: course.title,
+          });
+        } else if (status === 'overdue') {
+          dailyActivity[userId].overdue.push({
+            courseTitle: course.title,
+          });
+        }
+      });
+    });
+  
+    // Display daily activity by user
+    for (const userId of Object.keys(dailyActivity)) {
+      const userActivity = dailyActivity[userId];
+      const userName = await utils.getUserName(userId); // Await the async function
+  
+      console.log(`User: ${userName}`);
+  
+      const tableData = [];
+  
+      // Add completed assignments
+      userActivity.completed.forEach(item => {
+        tableData.push({
+          Course: item.courseTitle,
+          Status: 'Completed',
+          'Completed Date': item.completedDate,
+          Result: `${item.result}%`,
+        });
+      });
+  
+      // Add in-progress assignments
+      userActivity.in_progress.forEach(item => {
+        tableData.push({
+          Course: item.courseTitle,
+          Status: 'In Progress',
+          'Completed Date': 'N/A',
+          Result: 'N/A',
+        });
+      });
+  
+      // Add pending assignments
+      userActivity.pending.forEach(item => {
+        tableData.push({
+          Course: item.courseTitle,
+          Status: 'Pending',
+          'Completed Date': 'N/A',
+          Result: 'N/A',
+        });
+      });
+  
+      // Add overdue assignments
+      userActivity.overdue.forEach(item => {
+        tableData.push({
+          Course: item.courseTitle,
+          Status: 'Overdue',
+          'Completed Date': 'N/A',
+          Result: 'N/A',
+        });
+      });
+  
+      // Display table
+      console.table(tableData);
+      console.log('-----------------------------');
+    }
+  }
+  
+
 export const innform = {
     courseData,
     courseList,
@@ -465,5 +572,6 @@ export const innform = {
     getAverageScore,
     getUserList,
     getUserCourseDetails,
-    getUserNamesAndGroups
+    getUserNamesAndGroups,
+    displayDailyActivityByUser
 }
