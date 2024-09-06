@@ -40,6 +40,12 @@ if (courseName === '-daily') {
     logger.info(`baseInstruction - ${baseInstruction} = args 1 - ${args[1]}`)
 }
 
+if (courseName === '-help') {
+    logger.info(`Applying courseName to baseInstruction`)
+    baseInstruction = courseName
+    logger.info(`baseInstruction - ${baseInstruction} = args 1 - ${args[1]}`)
+}
+
 console.clear()
 switch (baseInstruction) {
     case `-l`:
@@ -133,6 +139,14 @@ switch (baseInstruction) {
         break;
     case '-daily':
         innform.displayDailyActivityByUser()
+        break;
+    case '-help':
+        console.log(`-l list course`)
+        console.log(`-s status of course`)
+        console.log(`-i display course info`)
+        console.log(`-users list users`)
+        console.log(`-write write courseData.json`)
+        console.log(`-daily daily user activity`)
         break;
     default:
         logger.warn(`Default code block of switch reached`)
